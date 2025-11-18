@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>14</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>SoftSense.Databricks.SqlClient</PackageId>
+    <Version Condition="'$(Version)' == ''">0.0.1-local</Version>
+    <Authors>SoftSense AS</Authors>
+    <Description>Databricks SQL Warehouse client for executing queries and streaming results</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/softsense/databricks-client</RepositoryUrl>
+    <PackageTags>databricks;sql;warehouse;query;client</PackageTags>
+    
+    <!-- AOT and trimming support -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SoftSense.Databricks.Core\SoftSense.Databricks.Core.csproj" />
+  </ItemGroup>
+
+</Project>

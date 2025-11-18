@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  check-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      dotnet: ${{ steps.filter.outputs.dotnet }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            dotnet:
+              - 'source/csharp/**'
+              - '.github/workflows/dotnet-build.yml'
+              - '.github/workflows/ci.yml'
+            python:
+              - 'source/python/**'
+              - 'source/csharp/**'
+              - '.github/workflows/python-build.yml'
+              - '.github/workflows/ci.yml'
+
+  dotnet-ci:
+    name: .NET CI
+    needs: check-changes
+    if: needs.check-changes.outputs.dotnet == 'true'
+    uses: ./.github/workflows/dotnet-build.yml
+
+  python-ci:
+    name: Python CI
+    needs: check-changes
+    if: needs.check-changes.outputs.python == 'true'
+    uses: ./.github/workflows/python-build.yml

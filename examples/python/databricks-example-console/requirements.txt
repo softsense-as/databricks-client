@@ -1,0 +1,4 @@
+rich>=13.7.0
+azure-identity>=1.17.0
+pythonnet>=3.0.0
+# Local package - install separately with: pip install -e ../../../python/softsense-databricks-sqlclient
