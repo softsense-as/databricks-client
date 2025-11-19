@@ -131,9 +131,16 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Authenticate to NuGet Test Feed (Trusted Publishing)
+      uses: NuGet/login@v1
+      with:
+        username: ${{ secrets.NUGET_TEST_USERNAME }}
+        service-endpoint: https://apiint.nugettest.org/v3/index.json
+
     - name: Publish all packages to NuGet Test Feed
       run: |
         dotnet nuget push "packages/**/*.nupkg" \
+          --api-key ${{ env.NUGET_API_KEY }} \
           --source https://apiint.nugettest.org/v3/index.json \
           --skip-duplicate
 
@@ -161,9 +168,15 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Authenticate to NuGet.org (Trusted Publishing)
+      uses: NuGet/login@v1
+      with:
+        username: ${{ secrets.NUGET_USERNAME }}
+
     - name: Publish all packages to NuGet.org
       run: |
         dotnet nuget push "packages/**/*.nupkg" \
+          --api-key ${{ env.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
 
