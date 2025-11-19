@@ -1,5 +1,8 @@
 # Python Console Example
 
+> [!WARNING]
+> This example is a Work In Progress (WIP) and may not be fully functional.
+
 Interactive console application with Rich UI.
 
 ## Features
@@ -17,6 +20,27 @@ databricks-demo
 ```
 
 ## Configuration
+
+> [!NOTE]
+> When running this application from the AspireHost, environment variables are automatically provided. Manual configuration is only needed when running standalone.
+
+### Using .env file
+
+Create a `.env` file in the project directory (already gitignored):
+
+```bash
+DatabricksConfig__WorkspaceUrl=https://your-workspace.azuredatabricks.net
+DatabricksConfig__WarehouseId=your-warehouse-id
+DatabricksConfig__AccessToken=your-token
+```
+
+Then run with `uv`:
+
+```bash
+uv run databricks-demo
+```
+
+### Using environment variables
 
 ```bash
 # Windows
