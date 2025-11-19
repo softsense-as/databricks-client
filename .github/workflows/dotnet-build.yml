@@ -15,11 +15,26 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Package version (e.g., 0.0.1)'
+        description: 'Package version (e.g., 0.1.0)'
         required: true
-        default: '0.0.1'
-      publish:
+        default: '0.1.0'
+      prerelease:
+        description: 'Build as pre-release (adds prerelease{buildnumber}-{hash})'
+        required: false
+        type: boolean
+        default: true
+      publish_github:
         description: 'Publish packages to GitHub Packages'
+        required: false
+        type: boolean
+        default: false
+      publish_nuget_test:
+        description: 'Publish to NuGet Test Feed (staging)'
+        required: false
+        type: boolean
+        default: false
+      publish_nuget:
+        description: 'Publish to NuGet.org (production)'
         required: false
         type: boolean
         default: false
@@ -49,7 +64,7 @@ jobs:
           IS_PRERELEASE="${{ github.event.release.prerelease }}"
         elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           VERSION="${{ inputs.version }}"
-          IS_PRERELEASE="false"
+          IS_PRERELEASE="${{ inputs.prerelease }}"
         else
           VERSION="0.0.1"
           IS_PRERELEASE="false"
@@ -58,7 +73,7 @@ jobs:
         SHORT_HASH=$(git rev-parse --short HEAD)
         RUN_NUMBER="${{ github.run_number }}"
 
-        if [ "${{ github.event_name }}" = "release" ] && [ "$IS_PRERELEASE" = "true" ]; then
+        if [ "$IS_PRERELEASE" = "true" ]; then
           FULL_VERSION="${VERSION}-prerelease${RUN_NUMBER}-${SHORT_HASH}"
         elif [ "${{ github.event_name }}" = "release" ]; then
           FULL_VERSION="${VERSION}"
@@ -67,6 +82,7 @@ jobs:
         fi
 
         echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+        echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
         echo "Generated version: ${FULL_VERSION}"
 
     - name: Setup .NET
@@ -95,7 +111,9 @@ jobs:
     name: Publish to NuGet Test Feed
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'release' && github.event.release.prerelease == true
+    if: |
+      (github.event_name == 'release' && github.event.release.prerelease == true) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_nuget_test == true)
     environment: staging
     permissions:
       id-token: write
@@ -123,7 +141,9 @@ jobs:
     name: Publish to NuGet.org
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'release' && github.event.release.prerelease == false
+    if: |
+      (github.event_name == 'release' && github.event.release.prerelease == false) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_nuget == true)
     environment: production
     permissions:
       id-token: write
@@ -154,7 +174,7 @@ jobs:
     if: |
       github.event_name == 'release' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && inputs.publish == true)
+      (github.event_name == 'workflow_dispatch' && inputs.publish_github == true)
     permissions:
       packages: write
       contents: read
