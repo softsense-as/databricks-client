@@ -1,225 +1,209 @@
-# AI Agent Instructions
+# AI Agent Playbook
 
-## Project Overview
+This document is the single source of truth for autonomous or semi-autonomous agents working in the **Databricks SQL Warehouse SDK** repository. Read it end-to-end before editing code.
 
-Databricks SQL Warehouse SDK with C# core and Python wrapper.
+---
 
-**Repository**: https://github.com/softsense/databricks-client
-**Structure**:
-- `source/csharp/` - .NET 10 implementation
-- `source/python/` - Python wrapper via pythonnet
-- `examples/` - Console applications
+## 1. Quick Reference
 
-## Architecture Principles
+| Area | Details |
+| --- | --- |
+| Mono-repo URL | <https://github.com/softsense/databricks-client> |
+| Core Tech | .NET 10 (C#), Python 3.10+, pythonnet bridge |
+| Primary Products | `SoftSense.Databricks.Core`, `SoftSense.Databricks.SqlClient`, `softsense-databricks-sqlclient` |
+| Key Directories | `source/csharp`, `source/python`, `examples/` |
+| Examples | `examples/dotnet/Databricks.Examples.Console`, `docs/examples/python_example.py` |
 
-1. **Single source of truth**: All HTTP, auth, retry logic in C#
-2. **Python wraps .NET**: Not a standalone Python implementation
-3. **Performance first**: Efficient streaming, no unnecessary allocations
-4. **AOT compatible**: No reflection-based serialization
+> **Golden Rule:** C# is the single source of truth for HTTP/auth/serialization. Python is only a wrapper over the .NET assemblies.
 
-## Current Implementation
+---
 
-### Packages
-- `SoftSense.Databricks.Core` - HTTP client, auth, config, exceptions
-- `SoftSense.Databricks.SqlClient` - SQL Warehouse queries
-- `softsense-databricks-sqlclient` - Python wrapper
+## 2. Agent Workflow (Never Skip)
 
-### Query Methods
+1. **Ingest Context**
+    - Read this playbook, `CLAUDE.md`, and `.github/copilot-instructions.md`.
+    - Inspect relevant files before modifying (they may have changed since last view).
+
+2. **Plan**
+    - Break the request into actionable steps and manage them with the todo tool when multi-step.
+    - Identify which projects/assets are affected (Core, SqlClient, Python wrapper, examples, docs, CI).
+
+3. **Execute**
+    - Apply minimal diffs; respect existing style and patterns.
+    - Keep C# and Python logic in sync (each public API needs parity).
+    - Follow the guardrails in section 4.
+
+4. **Validate**
+    - Run the smallest relevant build/test commands (section 6) after edits.
+    - Fix failures immediately; never leave the repo broken.
+
+5. **Report**
+    - Summarize what changed, how it was validated, and any caveats or follow-ups.
+
+---
+
+## 3. Architecture Overview
+
+- **Single Source of Truth** — HTTP clients, auth, retry logic, serialization all live in C# (`SoftSense.Databricks.Core`); `SoftSense.Databricks.SqlClient` hosts SQL Warehouse-specific APIs; the Python package only wraps the DLLs via pythonnet.
+- **Performance-First** — Streaming APIs must avoid buffering or re-serializing entire payloads and should rely on `Utf8JsonReader` + `HttpCompletionOption.ResponseHeadersRead`.
+- **AOT Compatibility** — Avoid reflection-based serialization; rely on attributes + explicit writers.
+- **Authentication** — Prefer Azure Entra ID via `TokenCredential`, allow PATs via `AccessToken`, and validate configs so only one mode is active.
+
+### Package Map
+
+| Package | Purpose | Notes |
+| --- | --- | --- |
+| `SoftSense.Databricks.Core` | Shared config, HTTP client, auth, exceptions | Dependency-light; used by everything |
+| `SoftSense.Databricks.SqlClient` | SQL Warehouse models + `SqlWarehouseClient` | Streaming + query APIs live here |
+| `SoftSense.Databricks.Tests` | xUnit coverage for config/auth/retry/HTTP | Keep fast & deterministic |
+| `softsense-databricks-sqlclient` | Python bridge calling .NET DLLs | Located at `source/python/...` |
+| `examples/` | Sample apps (C#, Python, Aspire host) | Must stay runnable with minimal setup |
+
+---
+
+## 4. Coding Guardrails
+
+### C-sharp
+
+- Use `required` for mandatory properties and `sealed` classes by default.
+- Async method names end with `Async`; async enumerables must include `[EnumeratorCancellation]`.
+- All public members need XML docs.
+- Nullable reference types remain enabled; treat warnings as errors.
+- JSON serialization: annotate DTOs with `[JsonPropertyName("snake_case")]` and use `Utf8JsonReader/Writer`; never round-trip with `JsonDocument` for streaming scenarios.
+- Streaming APIs: request `HttpCompletionOption.ResponseHeadersRead` and yield rows as they arrive; never buffer unless explicitly required.
+
+### Python
+
+- All functions must have type hints and snake_case naming.
+- Keep full parity with C# models/methods (no drifting signatures).
+- Provide context managers (`__enter__`/`__exit__`) for disposable .NET clients.
+- Enforce `mypy --strict`, `ruff`, `black`; resolve violations rather than ignoring them.
+- Call .NET async methods with `.GetAwaiter().GetResult()` (pythonnet constraint) and document sync boundaries.
+
+### Cross-Cutting DO / DON'T
+
+| DO | DON'T |
+| --- | --- |
+| Validate configs before use (`DatabricksConfig.Validate()`). | Duplicate option objects instead of reusing shared config classes. |
+| Keep streaming paths allocation-free. | Deserialize + reserialize JSON for streamed output. |
+| Add tests whenever public behavior changes. | Merge without running the relevant build/tests. |
+| Update documentation/examples alongside code changes. | Leave the Python wrapper inconsistent with C# APIs. |
+
+---
+
+## 5. Frequently Needed Knowledge
+
+### Query Surface (C#)
+
 ```csharp
-ExecuteQueryAsync()              // Full result as QueryResult
-ExecuteQueryJsonAsync()          // Full result as JSON array of objects
-ExecuteQueryStreamAsync()        // Stream raw JSON arrays
-ExecuteQueryStreamNdjsonAsync()  // Stream NDJSON with column names
+ExecuteQueryAsync();              // QueryResult
+ExecuteQueryJsonAsync();          // JSON array of objects
+ExecuteQueryStreamAsync();        // Stream raw JSON arrays
+ExecuteQueryStreamNdjsonAsync();  // Stream NDJSON with column names
 ```
 
-### Authentication
-- Azure Entra ID (preferred): `Credential` property
-- Personal Access Token: `AccessToken` property
+### Python Interop Tips
 
-## Critical Implementation Rules
+```python
+# Assembly loading
+#   Dev:  source/python/... references ../../csharp/**/bin/Debug/net10.0
+#   Prod: importlib.resources.files("softsense_databricks_sqlclient").joinpath("lib")
 
-### Streaming Requirements
-- ✅ Use `Utf8JsonReader` to extract raw JSON
-- ✅ Use `HttpCompletionOption.ResponseHeadersRead`
-- ✅ Stream data as received
-- ❌ NEVER use `JsonDocument.Parse()` on full response
-- ❌ NEVER deserialize then re-serialize in streaming
-
-### JSON Handling
-- Use `Utf8JsonWriter` for efficient output
-- No `JsonSerializer.SerializeToElement` (not AOT-compatible)
-- Write values directly: `writer.WriteNumberValue()`, `writer.WriteStringValue()`
-- All API models use snake_case via `[JsonPropertyName]`
-
-### Error Handling
-```csharp
-try { }
-catch (DatabricksAuthenticationException) { } // 401
-catch (DatabricksRateLimitException) { }      // 429
-catch (DatabricksHttpException) { }           // Other HTTP
-catch (DatabricksException) { }               // General
+# Calling async .NET methods
+dotnet_method(...).GetAwaiter().GetResult()
 ```
 
-## Code Style
+### Configuration Matrix
 
-### C# Requirements
-- `required` keyword for mandatory properties
-- `sealed` classes by default
-- Async methods end with `Async`
-- `[EnumeratorCancellation]` on async enumerables
-- XML docs on public APIs
-- Nullable reference types enabled
-- Warnings treated as errors
-- AOT-compatible code only
+| Property | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `WorkspaceUrl` | string | – | Required: [https://workspace-name.databricks.com](https://workspace-name.databricks.com) |
+| `WarehouseId` | string | null | Optional default warehouse |
+| `Credential` | TokenCredential | null | Azure Entra (preferred) |
+| `AccessToken` | string | null | PAT (legacy/CI) |
+| `TimeoutSeconds` | int | 300 | HTTP timeout |
+| `MaxRetries` | int | 3 | Exponential retry attempts |
+| `PollingIntervalMilliseconds` | int | 1000 | Statement status polling |
 
-### Python Requirements
-- Type hints on all functions
-- snake_case for all identifiers
-- Context managers (`__enter__`/`__exit__`)
-- Must pass `mypy --strict`
-- PEP 8 compliant
+---
 
-## Build Commands
+## 6. Build & Test Matrix
 
 ```bash
-# C# Build
+# C#
 cd source/csharp
 dotnet build
 dotnet test
-dotnet format
+# optional: dotnet format
 
-# Python Build
+# Python
 cd source/python/softsense-databricks-sqlclient
 pip install -e ".[dev]"
 pytest tests/
 ruff check src/
 black src/
-mypy src/
-```
-
-## CI/CD Workflows
-
-- `.github/workflows/ci.yml` - Main orchestrator
-- `.github/workflows/dotnet-build.yml` - C# build, publish to GitHub Packages
-- `.github/workflows/python-build.yml` - Python build, publish to PyPI
-
-Triggers:
-- `dotnet-build.yml` - On `source/csharp/**` changes
-- `python-build.yml` - On `source/python/**` or `source/csharp/**` changes
-- Both publish on GitHub release events
-
-## File Organization
 
 ```
-source/
-├── csharp/
-│   ├── SoftSense.Databricks.Core/
-│   │   ├── Configuration/
-│   │   ├── Exceptions/
-│   │   ├── Http/
-│   │   └── Models/
-│   ├── SoftSense.Databricks.SqlClient/
-│   │   ├── Models/
-│   │   └── SqlWarehouseClient.cs
-│   └── SoftSense.Databricks.Tests/
-└── python/
-    └── softsense-databricks-sqlclient/
-        ├── src/softsense_databricks_sqlclient/
-        │   ├── __init__.py
-        │   ├── client.py
-        │   └── exceptions.py
-        └── tests/
-```
 
-## Testing Requirements
+CI Workflows:
 
-### C# Tests (xUnit)
-- Config validation
-- Exception handling
-- Retry logic
-- HTTP client behavior
+- `.github/workflows/ci.yml` orchestrates.
+- `.github/workflows/dotnet-build.yml` triggers on `source/csharp/**` and publishes to GitHub Packages.
+- `.github/workflows/python-build.yml` triggers on `source/python/**` (and C# because DLLs matter) and publishes to PyPI.
 
-### Python Tests (pytest)
-- Config validation
-- .NET interop
-- Exception wrapping
-- DataFrame conversion
+> **Rule of Thumb:** Touching both languages means running both build pipelines locally (or at least their fast subsets) before opening a PR.
 
-## Common Tasks
+---
+
+## 7. Common Task Recipes
 
 ### Adding a New Query Method
-1. Implement in `SqlWarehouseClient.cs`
-2. Use `Utf8JsonReader/Writer` for JSON
-3. Add XML documentation
-4. Add to Python wrapper in `client.py`
-5. Add tests in both C# and Python
-6. Update README examples
 
-### Adding a New API Client
-1. Create `SoftSense.Databricks.{Service}/`
-2. Add models in `Models/`
-3. Implement `{Service}Client.cs`
-4. Add tests in `SoftSense.Databricks.Tests/`
-5. Create Python wrapper
-6. Update documentation
+1. Implement in `SoftSense.Databricks.SqlClient/SqlWarehouseClient.cs` using the streaming + JSON guardrails.
+2. Add DTOs under `SoftSense.Databricks.SqlClient/Models/` with `[JsonPropertyName]`.
+3. Document the method (XML docs + README/example snippet).
+4. Mirror the API in `softsense_databricks_sqlclient/client.py` with identical semantics.
+5. Add tests in `SoftSense.Databricks.Tests` and Python `tests/`.
+6. Update samples (`examples/`) and docs as needed.
 
-## Python-Specific Notes
+### Adding a New Service Client (e.g., Unity Catalog)
 
-### .NET Assembly Loading
-```python
-# Development
-relative_path = "../../../../csharp/.../bin/Debug/net10.0/"
+1. Create `SoftSense.Databricks.{Service}/` project and `.csproj`.
+2. Define request/response models inside `Models/`.
+3. Write `{Service}Client.cs` with proper auth + retry integration.
+4. Cover it in `SoftSense.Databricks.Tests`.
+5. Add Python wrappers + tests.
+6. Document the API in READMEs/examples.
 
-# Production
-importlib.resources.files(__package__).joinpath("lib")
-```
+### Updating Python Wrapper Assemblies
 
-### Calling .NET Async Methods
-```python
-result = dotnet_method.GetAwaiter().GetResult()
-```
+- Ensure `source/csharp` builds produce DLLs that are packaged under `source/python/.../lib/` before publishing.
+- Tests must validate assembly loading for both dev (relative paths) and release (packaged resources).
 
-### Type Conversion
-- .NET `List<object>` → Python `list`
-- .NET `Dictionary` → Python `dict`
-- .NET `QueryResult` → Python `QueryResult` wrapper
-- .NET exceptions → Python exceptions
+---
 
-## Configuration Options
+## 8. Known Limitations & Future Work
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `WorkspaceUrl` | string | Required | Databricks workspace URL |
-| `WarehouseId` | string | Optional | Default warehouse ID |
-| `Credential` | TokenCredential | null | Azure Entra credential |
-| `AccessToken` | string | null | PAT token |
-| `TimeoutSeconds` | int | 300 | HTTP timeout |
-| `MaxRetries` | int | 3 | Retry attempts |
+1. Python async story blocks on `.GetAwaiter().GetResult()`; true async interop is future work.
+2. Python package bundles .NET DLLs under `lib/`; any new C# dependency must be copied there.
+3. Deployments require .NET 10 runtime available wherever the Python package runs.
+4. Planned APIs: Unity Catalog, Workspace, Jobs, Clusters.
 
-## Known Limitations
-
-1. Python async uses `.GetAwaiter().GetResult()` - not true async
-2. Python bundles .NET DLLs in `lib/` directory
-3. Requires .NET 10 runtime for Python package
-
-## Future APIs (Planned)
+Planned package map:
 
 - `SoftSense.Databricks.UnityCatalog` - Catalog operations
 - `SoftSense.Databricks.Workspace` - Notebooks, repos
 - `SoftSense.Databricks.Jobs` - Job management
 - `SoftSense.Databricks.Clusters` - Cluster lifecycle
 
-## Support & Documentation
+---
 
-- **Issues**: GitHub Issues
-- **Main README**: `/README.md`
-- **Python README**: `/source/python/softsense-databricks-sqlclient/README.md`
-- **Examples**: `/examples/`
+## 9. Support & Documentation Map
 
-## Key Takeaways for AI Agents
+- Main README: `/README.md`
+- Python README: `/source/python/softsense-databricks-sqlclient/README.md`
+- Docs portal: `/docs/`
+- Examples: `/examples/`
+- Issues/Support: GitHub Issues on the main repo
 
-1. **Never batch data in streaming** - Use `Utf8JsonReader` properly
-2. **AOT compatibility is mandatory** - No reflection
-3. **C# is the source** - Python just wraps it
-4. **Performance matters** - Efficient JSON parsing, minimal allocations
-5. **Follow existing patterns** - Consistency across codebase
+When in doubt, trace existing patterns before inventing new ones. Consistency, performance, and parity between C# and Python are the north stars for every change.

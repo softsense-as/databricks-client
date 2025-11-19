@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Azure.Identity;
+using Microsoft.Extensions.Configuration;
 using Spectre.Console;
 using SoftSense.Databricks.Core.Configuration;
 using SoftSense.Databricks.Core.Exceptions;
@@ -24,19 +25,15 @@ class Program
 
         AnsiConsole.WriteLine();
 
-        // Get configuration
-        var config = GetConfiguration();
-        if (config == null)
-        {
-            AnsiConsole.MarkupLine("[red]✗[/] Configuration failed. Please set environment variables.");
-            return 1;
-        }
+        // Load configuration
+        var configuration = new ConfigurationBuilder().BuildStandardConfiguration();
+        var config = configuration.GetValidatedSection<DatabricksConfig>();
 
         // Create client
         using var client = new SqlWarehouseClient(config);
 
         // Get warehouse ID
-        var warehouseId = Environment.GetEnvironmentVariable("DATABRICKS_WAREHOUSE_ID");
+        var warehouseId = config.WarehouseId;
         if (string.IsNullOrEmpty(warehouseId))
         {
             warehouseId = AnsiConsole.Ask<string>("Enter [green]SQL Warehouse ID[/]:");
@@ -47,52 +44,7 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Authentication: [blue]{GetAuthMethodName(config)}[/]");
         AnsiConsole.WriteLine();
 
-        // Check if running in demo mode (non-interactive, like in Aspire)
-        var isDemoMode = !AnsiConsole.Profile.Capabilities.Interactive ||
-                         Environment.GetEnvironmentVariable("DEMO_MODE") == "true";
-
-        if (isDemoMode)
-        {
-            // Run automated demo
-            AnsiConsole.MarkupLine("[cyan]Running in demo mode (non-interactive)[/]");
-            AnsiConsole.WriteLine();
-
-            try
-            {
-                AnsiConsole.MarkupLine("[yellow]═══ Configuration Info ═══[/]");
-                ShowConfigurationInfo(config, warehouseId);
-                AnsiConsole.WriteLine();
-
-                AnsiConsole.MarkupLine("[yellow]═══ Quick Query Demo ═══[/]");
-                await ExecuteQuickQuery(client, warehouseId);
-                AnsiConsole.WriteLine();
-
-                var demoLimit = int.TryParse(Environment.GetEnvironmentVariable("DEMO_LIMIT"), out var limit) ? limit : 10;
-                AnsiConsole.MarkupLine($"[yellow]═══ Query Dataset Demo ({demoLimit} rows) ═══[/]");
-                await StreamDatasetDemo(client, warehouseId, demoLimit);
-                AnsiConsole.WriteLine();
-
-                AnsiConsole.MarkupLine("[green]✓ Demo completed successfully![/]");
-                return 0;
-            }
-            catch (DatabricksAuthenticationException ex)
-            {
-                AnsiConsole.MarkupLine($"[red]✗ Authentication failed:[/] {ex.Message}");
-                return 1;
-            }
-            catch (DatabricksException ex)
-            {
-                AnsiConsole.MarkupLine($"[red]✗ Databricks error:[/] {ex.Message}");
-                return 1;
-            }
-            catch (Exception ex)
-            {
-                AnsiConsole.MarkupLine($"[red]✗ Error:[/] {ex.Message}");
-                return 1;
-            }
-        }
-
-        // Main menu loop (interactive mode)
+        // Main menu loop
         while (true)
         {
             var choice = AnsiConsole.Prompt(
@@ -136,82 +88,27 @@ class Program
             }
             catch (DatabricksAuthenticationException ex)
             {
-                AnsiConsole.MarkupLine($"[red]✗ Authentication failed:[/] {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]✗ Authentication failed:[/] {Markup.Escape(ex.Message)}");
             }
             catch (DatabricksException ex)
             {
-                AnsiConsole.MarkupLine($"[red]✗ Databricks error:[/] {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]✗ Databricks error:[/] {Markup.Escape(ex.Message)}");
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[red]✗ Error:[/] {ex.Message}");
+                AnsiConsole.MarkupLine($"[red]✗ Error:[/] {Markup.Escape(ex.Message)}");
             }
 
             AnsiConsole.WriteLine();
         }
     }
 
-    static DatabricksConfig? GetConfiguration()
-    {
-        var workspaceUrl = Environment.GetEnvironmentVariable("DATABRICKS_WORKSPACE_URL");
-        var accessToken = Environment.GetEnvironmentVariable("DATABRICKS_TOKEN");
-        var demoMode = Environment.GetEnvironmentVariable("DEMO_MODE") == "true";
-
-        if (string.IsNullOrEmpty(workspaceUrl))
-        {
-            AnsiConsole.MarkupLine("[yellow]⚠[/] DATABRICKS_WORKSPACE_URL not set");
-            workspaceUrl = AnsiConsole.Ask<string>("Enter [green]workspace URL[/]:");
-        }
-
-        // In demo mode, use PAT from environment variable
-        if (demoMode)
-        {
-            return new DatabricksConfig
-            {
-                WorkspaceUrl = workspaceUrl,
-                AccessToken = accessToken
-            };
-        }
-
-        // Interactive mode - let user choose authentication method
-        var authMethod = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Choose [green]authentication method[/]:")
-                .AddChoices(new[] {
-                    "Azure Entra ID (DefaultAzureCredential)",
-                    "Personal Access Token (PAT)"
-                }));
-
-        if (authMethod.StartsWith("Azure Entra ID"))
-        {
-            return new DatabricksConfig
-            {
-                WorkspaceUrl = workspaceUrl,
-                Credential = new DefaultAzureCredential()
-            };
-        }
-        else
-        {
-            // PAT authentication
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                accessToken = AnsiConsole.Prompt(
-                    new TextPrompt<string>("Enter [green]Personal Access Token[/]:")
-                        .Secret());
-            }
-
-            return new DatabricksConfig
-            {
-                WorkspaceUrl = workspaceUrl,
-                AccessToken = accessToken
-            };
-        }
-    }
-
     static string GetAuthMethodName(DatabricksConfig config)
     {
         if (config.Credential == null)
+        {
             return "Personal Access Token";
+        }
 
         var credentialType = config.Credential.GetType().Name;
         return credentialType switch
@@ -277,33 +174,6 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Streamed {rowCount} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
     }
 
-    static async Task StreamDatasetDemo(SqlWarehouseClient client, string warehouseId, int limit)
-    {
-        // Use a more universally available sample dataset
-        var sql = Environment.GetEnvironmentVariable("DEMO_QUERY")
-            ?? $"SELECT * FROM `samples`.`accuweather`.`forecast_daily_calendar_metric` LIMIT {limit}";
-
-        AnsiConsole.MarkupLine($"[dim]Executing:[/] {sql}");
-        AnsiConsole.WriteLine();
-
-        // Execute query and display results
-        var stopwatch = Stopwatch.StartNew();
-        var result = await AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .StartAsync("Executing query...", async ctx =>
-            {
-                return await client.ExecuteQueryAsync(warehouseId, sql);
-            });
-        stopwatch.Stop();
-
-        AnsiConsole.MarkupLine($"[green]✓[/] Retrieved {result.Rows.Count} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
-        AnsiConsole.WriteLine();
-
-        // Display first 10 rows in a table
-        AnsiConsole.MarkupLine($"[yellow]First {Math.Min(10, result.Rows.Count)} rows:[/]");
-        DisplayResultsTable(result);
-    }
-
     static async Task ExploreTables(SqlWarehouseClient client, string warehouseId)
     {
         var sql = "SHOW TABLES";
@@ -330,13 +200,13 @@ class Program
         // Add columns
         foreach (var column in result.Columns)
         {
-            table.AddColumn(new TableColumn($"[blue]{column.Name}[/]").Centered());
+            table.AddColumn(new TableColumn($"[blue]{Markup.Escape(column.Name)}[/]").Centered());
         }
 
         // Add rows
         foreach (var row in result.Rows.Take(20))
         {
-            var values = row.Columns.Select(col => row.GetString(col) ?? "NULL").ToArray();
+            var values = row.Columns.Select(col => Markup.Escape(row.GetString(col) ?? "NULL")).ToArray();
             table.AddRow(values);
         }
 
@@ -396,7 +266,7 @@ class Program
         // Add columns
         foreach (var column in columnsToShow)
         {
-            table.AddColumn(new TableColumn($"[blue]{column.Name}[/]\n[dim]{column.Type}[/]"));
+            table.AddColumn(new TableColumn($"[blue]{Markup.Escape(column.Name)}[/]\n[dim]{Markup.Escape(column.Type)}[/]"));
         }
 
         // Add rows (limit to 10 for display)
@@ -409,8 +279,9 @@ class Program
                 if (string.IsNullOrEmpty(value))
                     return "[dim]NULL[/]";
 
-                // Truncate long values
-                return value.Length > 30 ? value.Substring(0, 27) + "..." : value;
+                // Escape markup and truncate long values
+                var escaped = Markup.Escape(value);
+                return escaped.Length > 30 ? escaped.Substring(0, 27) + "..." : escaped;
             }).ToArray();
             table.AddRow(values);
         }
@@ -430,11 +301,21 @@ class Program
 
     static void ShowConfigurationInfo(DatabricksConfig config, string warehouseId)
     {
+        var authInfo = GetAuthMethodName(config);
+
+        // If using PAT, show first 3 chars + masked + length
+        if (!string.IsNullOrEmpty(config.AccessToken))
+        {
+            var token = config.AccessToken;
+            var preview = token.Length >= 3 ? token.Substring(0, 3) : token;
+            authInfo += $"\n[blue]Access Token:[/] {preview}********* ({token.Length})";
+        }
+
         var panel = new Panel(
             new Markup($"""
             [blue]Workspace URL:[/] {config.WorkspaceUrl}
             [blue]Warehouse ID:[/] {warehouseId}
-            [blue]Authentication:[/] {GetAuthMethodName(config)}
+            [blue]Authentication:[/] {authInfo}
             [blue]Timeout:[/] {config.TimeoutSeconds}s
             [blue]Max Retries:[/] {config.MaxRetries}
             [blue]Polling Interval:[/] {config.PollingIntervalMilliseconds}ms
