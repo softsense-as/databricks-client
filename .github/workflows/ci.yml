@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       dotnet: ${{ steps.filter.outputs.dotnet }}
-      python: ${{ steps.filter.outputs.python }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,20 +25,9 @@ jobs:
               - 'source/csharp/**'
               - '.github/workflows/dotnet-build.yml'
               - '.github/workflows/ci.yml'
-            python:
-              - 'source/python/**'
-              - 'source/csharp/**'
-              - '.github/workflows/python-build.yml'
-              - '.github/workflows/ci.yml'
 
   dotnet-ci:
     name: .NET CI
     needs: check-changes
     if: needs.check-changes.outputs.dotnet == 'true'
     uses: ./.github/workflows/dotnet-build.yml
-
-  python-ci:
-    name: Python CI
-    needs: check-changes
-    if: needs.check-changes.outputs.python == 'true'
-    uses: ./.github/workflows/python-build.yml

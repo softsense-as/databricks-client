@@ -18,6 +18,7 @@ on:
         description: 'Package version (e.g., 0.0.1)'
         required: true
         default: '0.0.1'
+  workflow_call:
 
 env:
   DOTNET_VERSION: '10.0.x'
