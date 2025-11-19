@@ -2,7 +2,7 @@
 
 High-performance .NET SDK for Databricks SQL Warehouse.
 
-[![.NET Build](https://github.com/softsense/databricks-client/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/softsense/databricks-client/actions/workflows/dotnet-build.yml)
+[![.NET Build and Publish](https://github.com/softsense-as/databricks-client/actions/workflows/dotnet-build.yml/badge.svg?branch=main)](https://github.com/softsense-as/databricks-client/actions/workflows/dotnet-build.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Features
