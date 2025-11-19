@@ -20,7 +20,7 @@
     <ProjectReference Include="..\SoftSense.Databricks.Core\SoftSense.Databricks.Core.csproj"
                       IsAspireProjectResource="false"
                       ReferenceOutputAssembly="true" />
-    <ProjectReference Include="..\..\..\examples\dotnet\Databricks.Examples.Console\Databricks.Examples.Console.csproj" />
+    <ProjectReference Include="..\..\..\examples\dotnet\SoftSense.Examples.Console\SoftSense.Examples.Console.csproj" />
   </ItemGroup>
 
 </Project>

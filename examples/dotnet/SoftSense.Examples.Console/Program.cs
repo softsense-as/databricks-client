@@ -6,7 +6,7 @@ using SoftSense.Databricks.Core.Configuration;
 using SoftSense.Databricks.Core.Exceptions;
 using SoftSense.Databricks.SqlClient;
 
-namespace Databricks.Examples.Console;
+namespace SoftSense.Examples.Console;
 
 internal class Program
 {

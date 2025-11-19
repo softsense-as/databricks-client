@@ -20,7 +20,7 @@ var databricksWarehouseId = databricksConfig.WarehouseId;
 var databricksToken = databricksConfig.AccessToken ?? string.Empty;
 
 // Add .NET Console Example
-var dotnetExample = builder.AddProject<Projects.Databricks_Examples_Console>("dotnet-example")
+var dotnetExample = builder.AddProject<Projects.SoftSense_Examples_Console>("dotnet-example")
    .WithEnvironment("DatabricksConfig__WorkspaceUrl", databricksWorkspaceUrl)
    .WithEnvironment("DatabricksConfig__WarehouseId", databricksWarehouseId)
    .WithEnvironment("DatabricksConfig__AccessToken", databricksToken)

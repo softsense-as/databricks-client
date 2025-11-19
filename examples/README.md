@@ -4,23 +4,23 @@ Example applications demonstrating the Databricks SQL Client SDK.
 
 ## .NET Console (Minimal)
 
-**Location**: `dotnet/Databricks.Examples.ConsoleMinimal/`
+**Location**: `dotnet/SoftSense.Examples.ConsoleMinimal/`
 
 Simple console app with multiple fetch methods.
 
 ```bash
-cd dotnet/Databricks.Examples.ConsoleMinimal
+cd dotnet/SoftSense.Examples.ConsoleMinimal
 dotnet run
 ```
 
 ## .NET Console (Full)
 
-**Location**: `dotnet/Databricks.Examples.Console/`
+**Location**: `dotnet/SoftSense.Examples.Console/`
 
 Feature-rich console with Spectre.Console UI, interactive menus, and progress bars.
 
 ```bash
-cd dotnet/Databricks.Examples.Console
+cd dotnet/SoftSense.Examples.Console
 dotnet run
 ```
 

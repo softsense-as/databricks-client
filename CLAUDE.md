@@ -12,7 +12,7 @@ This document is the single source of truth for autonomous or semi-autonomous ag
 | Core Tech | .NET 10 (C#), Python 3.10+, pythonnet bridge |
 | Primary Products | `SoftSense.Databricks.Core`, `SoftSense.Databricks.SqlClient`, `softsense-databricks-sqlclient` |
 | Key Directories | `source/csharp`, `source/python`, `examples/` |
-| Examples | `examples/dotnet/Databricks.Examples.Console`, `docs/examples/python_example.py` |
+| Examples | `examples/dotnet/SoftSense.Examples.Console`, `docs/examples/python_example.py` |
 
 > **Golden Rule:** C# is the single source of truth for HTTP/auth/serialization. Python is only a wrapper over the .NET assemblies.
 

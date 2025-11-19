@@ -21,7 +21,7 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  SOLUTION_PATH: source/csharp/Databricks.sln
+  SOLUTION_PATH: source/csharp/SoftSense.Databricks.Client.sln
 
 jobs:
   build:
