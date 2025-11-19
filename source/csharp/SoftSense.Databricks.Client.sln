@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databricks.Examples.Console
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databricks.Examples.ConsoleMinimal", "..\..\examples\dotnet\Databricks.Examples.ConsoleMinimal\Databricks.Examples.ConsoleMinimal.csproj", "{82BC7DBF-D6DE-44FC-B1EA-D99356B36896}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftSense.Databricks.Benchmarks", "SoftSense.Databricks.Benchmarks\SoftSense.Databricks.Benchmarks.csproj", "{0021E97F-8AE0-489B-8887-C7D2429D7368}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,18 @@ Global
 		{82BC7DBF-D6DE-44FC-B1EA-D99356B36896}.Release|x64.Build.0 = Release|Any CPU
 		{82BC7DBF-D6DE-44FC-B1EA-D99356B36896}.Release|x86.ActiveCfg = Release|Any CPU
 		{82BC7DBF-D6DE-44FC-B1EA-D99356B36896}.Release|x86.Build.0 = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|x64.Build.0 = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Debug|x86.Build.0 = Debug|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|x64.ActiveCfg = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|x64.Build.0 = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|x86.ActiveCfg = Release|Any CPU
+		{0021E97F-8AE0-489B-8887-C7D2429D7368}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,6 +11,9 @@
 *.sln.docstates
 *.env
 
+# BenchmarkDotNet artifacts
+BenchmarkDotNet.Artifacts/
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

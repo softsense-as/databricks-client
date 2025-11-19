@@ -25,12 +25,20 @@ public static class ConfigurationExtensions
         var environmentName = Environment.GetEnvironmentVariable(environmentVariableName) ?? "Production";
         var configBasePath = basePath ?? AppContext.BaseDirectory;
 
-        return builder
+        builder
             .SetBasePath(configBasePath)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
             .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: false)
-            .AddUserSecrets(Assembly.GetEntryAssembly()!, false)
-            .Build();
+            .AddEnvironmentVariables();
+
+        // Add user secrets if entry assembly is available and has UserSecretsId attribute
+        var entryAssembly = Assembly.GetEntryAssembly();
+        if (entryAssembly is not null)
+        {
+            builder.AddUserSecrets(entryAssembly, optional: true);
+        }
+
+        return builder.Build();
     }
 
     /// <summary>

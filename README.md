@@ -145,6 +145,17 @@ dotnet build
 dotnet test
 ```
 
+## Benchmarks
+
+Performance benchmarks comparing batched vs streamed query execution are available in `source/csharp/SoftSense.Databricks.Benchmarks`.
+
+```bash
+cd source/csharp/SoftSense.Databricks.Benchmarks
+dotnet run -c Release
+```
+
+See [benchmark documentation](source/csharp/SoftSense.Databricks.Benchmarks/README.md) for details.
+
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE) file.

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using SoftSense.Databricks.Core.Configuration;
 
@@ -16,8 +15,8 @@ public sealed class ConfigurationExtensionsTests
         var configuration = builder.BuildStandardConfiguration();
 
         // Assert
-        configuration.Should().NotBeNull();
-        configuration.Should().BeAssignableTo<IConfiguration>();
+        Assert.NotNull(configuration);
+        Assert.IsAssignableFrom<IConfiguration>(configuration);
     }
 
     [Fact]
@@ -31,7 +30,7 @@ public sealed class ConfigurationExtensionsTests
         var configuration = builder.BuildStandardConfiguration(basePath: customPath);
 
         // Assert
-        configuration.Should().NotBeNull();
+        Assert.NotNull(configuration);
     }
 
     [Fact]
@@ -41,7 +40,7 @@ public sealed class ConfigurationExtensionsTests
         var builder = new ConfigurationBuilder();
         var customEnvVar = "TEST_ENV";
         var previousValue = Environment.GetEnvironmentVariable(customEnvVar);
-        
+
         try
         {
             Environment.SetEnvironmentVariable(customEnvVar, "Testing");
@@ -50,7 +49,7 @@ public sealed class ConfigurationExtensionsTests
             var configuration = builder.BuildStandardConfiguration(environmentVariableName: customEnvVar);
 
             // Assert
-            configuration.Should().NotBeNull();
+            Assert.NotNull(configuration);
         }
         finally
         {
@@ -80,12 +79,12 @@ public sealed class ConfigurationExtensionsTests
         var config = configuration.GetValidatedSection<DatabricksConfig>();
 
         // Assert
-        config.Should().NotBeNull();
-        config.WorkspaceUrl.Should().Be("https://test.databricks.com");
-        config.AccessToken.Should().Be("test-token");
-        config.WarehouseId.Should().Be("test-warehouse-id");
-        config.TimeoutSeconds.Should().Be(300);
-        config.MaxRetries.Should().Be(3);
+        Assert.NotNull(config);
+        Assert.Equal("https://test.databricks.com", config.WorkspaceUrl);
+        Assert.Equal("test-token", config.AccessToken);
+        Assert.Equal("test-warehouse-id", config.WarehouseId);
+        Assert.Equal(300, config.TimeoutSeconds);
+        Assert.Equal(3, config.MaxRetries);
     }
 
     [Fact]
@@ -104,10 +103,10 @@ public sealed class ConfigurationExtensionsTests
         var config = configuration.GetValidatedSection<DatabricksConfig>();
 
         // Assert
-        config.Should().NotBeNull();
-        config.WorkspaceUrl.Should().Be("https://test.databricks.com");
-        config.AccessToken.Should().Be("test-token");
-        config.WarehouseId.Should().BeNull();
+        Assert.NotNull(config);
+        Assert.Equal("https://test.databricks.com", config.WorkspaceUrl);
+        Assert.Equal("test-token", config.AccessToken);
+        Assert.Null(config.WarehouseId);
     }
 
     [Fact]
@@ -118,12 +117,10 @@ public sealed class ConfigurationExtensionsTests
             .AddInMemoryCollection(new Dictionary<string, string?>())
             .Build();
 
-        // Act
-        var act = () => configuration.GetValidatedSection<DatabricksConfig>();
-
-        // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("Missing DatabricksConfig configuration section.");
+        // Act & Assert
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            configuration.GetValidatedSection<DatabricksConfig>());
+        Assert.Equal("Missing DatabricksConfig configuration section.", exception.Message);
     }
 
     [Fact]
@@ -137,15 +134,8 @@ public sealed class ConfigurationExtensionsTests
             })
             .Build();
 
-        // Act
-        var act = () => configuration.GetValidatedSection<DatabricksConfig>();
-
-        // Assert - should throw because WorkspaceUrl is required
-        // The exception is wrapped in TargetInvocationException due to reflection
-        act.Should().Throw<Exception>()
-            .Where(ex => ex is ArgumentException || 
-                        (ex is System.Reflection.TargetInvocationException && 
-                         ex.InnerException is ArgumentException));
+        // Act & Assert - should throw because WorkspaceUrl is required
+        Assert.ThrowsAny<Exception>(() => configuration.GetValidatedSection<DatabricksConfig>());
     }
 
     [Fact]
@@ -164,9 +154,9 @@ public sealed class ConfigurationExtensionsTests
         var config = configuration.GetValidatedSection<DatabricksConfig>("CustomSection");
 
         // Assert
-        config.Should().NotBeNull();
-        config.WorkspaceUrl.Should().Be("https://custom.databricks.com");
-        config.AccessToken.Should().Be("custom-token");
+        Assert.NotNull(config);
+        Assert.Equal("https://custom.databricks.com", config.WorkspaceUrl);
+        Assert.Equal("custom-token", config.AccessToken);
     }
 
     [Fact]
@@ -188,12 +178,12 @@ public sealed class ConfigurationExtensionsTests
         var config = configuration.GetValidatedSection<DatabricksConfig>(opt =>
         {
             validatorExecuted = true;
-            opt.WarehouseId.Should().Be("test-warehouse-id");
+            Assert.Equal("test-warehouse-id", opt.WarehouseId);
         });
 
         // Assert
-        config.Should().NotBeNull();
-        validatorExecuted.Should().BeTrue();
+        Assert.NotNull(config);
+        Assert.True(validatorExecuted);
     }
 
     [Fact]
@@ -208,14 +198,12 @@ public sealed class ConfigurationExtensionsTests
             })
             .Build();
 
-        // Act
-        var act = () => configuration.GetValidatedSection<DatabricksConfig>(opt =>
-        {
-            throw new InvalidOperationException("Custom validation failed");
-        });
-
-        // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("Custom validation failed");
+        // Act & Assert
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            configuration.GetValidatedSection<DatabricksConfig>(opt =>
+            {
+                throw new InvalidOperationException("Custom validation failed");
+            }));
+        Assert.Equal("Custom validation failed", exception.Message);
     }
 }

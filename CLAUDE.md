@@ -65,12 +65,14 @@ This document is the single source of truth for autonomous or semi-autonomous ag
 
 ### C-sharp
 
+- **CRITICAL**: ALL variables, parameters, methods, properties, classes, and fields MUST have explicit access modifiers (`public`, `private`, `internal`, `protected`, `private protected`, `protected internal`). NEVER rely on implicit/default modifiers.
 - Use `required` for mandatory properties and `sealed` classes by default.
 - Async method names end with `Async`; async enumerables must include `[EnumeratorCancellation]`.
 - All public members need XML docs.
 - Nullable reference types remain enabled; treat warnings as errors.
 - JSON serialization: annotate DTOs with `[JsonPropertyName("snake_case")]` and use `Utf8JsonReader/Writer`; never round-trip with `JsonDocument` for streaming scenarios.
 - Streaming APIs: request `HttpCompletionOption.ResponseHeadersRead` and yield rows as they arrive; never buffer unless explicitly required.
+- **NEVER** use FluentAssertions library; use standard xUnit assertions (`Assert.NotNull`, `Assert.Equal`, `Assert.Throws`, etc.).
 
 ### Python
 
@@ -84,6 +86,8 @@ This document is the single source of truth for autonomous or semi-autonomous ag
 
 | DO | DON'T |
 | --- | --- |
+| Use explicit access modifiers on ALL code elements. | Use implicit/default modifiers (e.g., omitting `private`). |
+| Use standard xUnit assertions in tests. | Use FluentAssertions library. |
 | Validate configs before use (`DatabricksConfig.Validate()`). | Duplicate option objects instead of reusing shared config classes. |
 | Keep streaming paths allocation-free. | Deserialize + reserialize JSON for streamed output. |
 | Add tests whenever public behavior changes. | Merge without running the relevant build/tests. |
