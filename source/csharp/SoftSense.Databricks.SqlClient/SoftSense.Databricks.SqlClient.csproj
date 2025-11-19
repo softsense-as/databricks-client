@@ -7,19 +7,34 @@
     <LangVersion>14</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- Package Metadata -->
     <PackageId>SoftSense.Databricks.SqlClient</PackageId>
     <Version Condition="'$(Version)' == ''">0.0.1-local</Version>
     <Authors>SoftSense AS</Authors>
-    <Description>Databricks SQL Warehouse client for executing queries and streaming results</Description>
+    <Company>SoftSense AS</Company>
+    <Copyright>Copyright (c) SoftSense AS 2025</Copyright>
+    <Description>SQL Warehouse client for Databricks providing synchronous and streaming query execution with support for batched and chunked result retrieval, catalog and schema management.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/softsense/databricks-client</RepositoryUrl>
-    <PackageTags>databricks;sql;warehouse;query;client</PackageTags>
-    
+    <PackageProjectUrl>https://github.com/softsense-as/databricks-client</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>databricks;sql;warehouse;query;client;streaming;async</PackageTags>
+    <RepositoryUrl>https://github.com/softsense-as/databricks-client</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
     <!-- AOT and trimming support -->
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SoftSense.Databricks.Core\SoftSense.Databricks.Core.csproj" />
