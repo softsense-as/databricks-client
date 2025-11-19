@@ -43,13 +43,29 @@ jobs:
     - name: Generate version
       id: version
       run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+        if [ "${{ github.event_name }}" = "release" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          IS_PRERELEASE="${{ github.event.release.prerelease }}"
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           VERSION="${{ inputs.version }}"
+          IS_PRERELEASE="false"
         else
           VERSION="0.0.1"
+          IS_PRERELEASE="false"
         fi
+
         SHORT_HASH=$(git rev-parse --short HEAD)
-        FULL_VERSION="${VERSION}-${SHORT_HASH}"
+        RUN_NUMBER="${{ github.run_number }}"
+
+        if [ "${{ github.event_name }}" = "release" ] && [ "$IS_PRERELEASE" = "true" ]; then
+          FULL_VERSION="${VERSION}-prerelease${RUN_NUMBER}-${SHORT_HASH}"
+        elif [ "${{ github.event_name }}" = "release" ]; then
+          FULL_VERSION="${VERSION}"
+        else
+          FULL_VERSION="${VERSION}-${SHORT_HASH}"
+        fi
+
         echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
         echo "Generated version: ${FULL_VERSION}"
 
@@ -75,37 +91,61 @@ jobs:
           source/csharp/**/bin/Release/*.nupkg
         retention-days: 5
 
-  # publish-nuget:
-  #   name: Publish to NuGet
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   if: github.event_name == 'release'
+  publish-nuget-test:
+    name: Publish to NuGet Test Feed
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' && github.event.release.prerelease == true
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
 
-  #   steps:
-  #   - name: Download artifacts
-  #     uses: actions/download-artifact@v4
-  #     with:
-  #       name: nuget-packages
-  #       path: packages
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages
 
-  #   - name: Setup .NET
-  #     uses: actions/setup-dotnet@v4
-  #     with:
-  #       dotnet-version: ${{ env.DOTNET_VERSION }}
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-  #   - name: Publish SoftSense.Databricks.Core to NuGet
-  #     run: |
-  #       dotnet nuget push packages/SoftSense.Databricks.Core/bin/Release/*.nupkg \
-  #         --api-key ${{ secrets.NUGET_API_KEY }} \
-  #         --source https://api.nuget.org/v3/index.json \
-  #         --skip-duplicate
+    - name: Publish all packages to NuGet Test Feed
+      run: |
+        dotnet nuget push "packages/**/*.nupkg" \
+          --source https://apiint.nugettest.org/v3/index.json \
+          --skip-duplicate
 
-  #   - name: Publish SoftSense.Databricks.SqlClient to NuGet
-  #     run: |
-  #       dotnet nuget push packages/SoftSense.Databricks.SqlClient/bin/Release/*.nupkg \
-  #         --api-key ${{ secrets.NUGET_API_KEY }} \
-  #         --source https://api.nuget.org/v3/index.json \
-  #         --skip-duplicate
+  publish-nuget:
+    name: Publish to NuGet.org
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' && github.event.release.prerelease == false
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Publish all packages to NuGet.org
+      run: |
+        dotnet nuget push "packages/**/*.nupkg" \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
 
   publish-github:
     name: Publish to GitHub Packages

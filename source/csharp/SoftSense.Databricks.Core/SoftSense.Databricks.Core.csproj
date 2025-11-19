@@ -7,14 +7,25 @@
     <LangVersion>14</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- Package Metadata -->
     <PackageId>SoftSense.Databricks.Core</PackageId>
     <Version Condition="'$(Version)' == ''">0.0.1-local</Version>
     <Authors>SoftSense AS</Authors>
-    <Description>Core library for Databricks SDK - HTTP client abstractions, authentication, and shared models</Description>
+    <Company>SoftSense AS</Company>
+    <Copyright>Copyright (c) SoftSense AS 2025</Copyright>
+    <Description>Core library for Databricks SDK providing HTTP client abstractions, authentication (Azure Entra ID and PAT), configuration management, and shared models for building Databricks integrations.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/softsense/databricks-client</RepositoryUrl>
-    <PackageTags>databricks;sdk;api;client;azure;entra</PackageTags>
-    
+    <PackageProjectUrl>https://github.com/softsense-as/databricks-client</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>databricks;sdk;api;client;azure;entra;authentication;http</PackageTags>
+    <RepositoryUrl>https://github.com/softsense-as/databricks-client</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
     <!-- AOT and trimming support -->
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
@@ -22,6 +33,10 @@
     <!-- Suppress IL2026 and IL3050 for JSON serialization - can be addressed with source generators in future -->
     <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.50.0" />
