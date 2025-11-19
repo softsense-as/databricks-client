@@ -1,0 +1,44 @@
+[project]
+name = "databricks-example-console"
+version = "0.1.0"
+description = "Example console application for Databricks SQL Client"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "SoftSense"}
+]
+
+dependencies = [
+    "rich>=13.7.0",
+    "azure-identity>=1.17.0",
+    "pythonnet>=3.0.0",
+    "softsense-databricks-sqlclient",
+]
+
+[tool.uv.sources]
+softsense-databricks-sqlclient = { path = "../../../python/softsense-databricks-sqlclient", editable = true }
+
+[project.scripts]
+databricks-demo = "databricks_example:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/databricks_example"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
