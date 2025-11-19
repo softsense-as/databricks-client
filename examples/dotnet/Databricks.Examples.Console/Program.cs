@@ -8,9 +8,9 @@ using SoftSense.Databricks.SqlClient;
 
 namespace Databricks.Examples.Console;
 
-class Program
+internal class Program
 {
-    static async Task<int> Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         // Display banner
         AnsiConsole.Write(
@@ -103,7 +103,7 @@ class Program
         }
     }
 
-    static string GetAuthMethodName(DatabricksConfig config)
+    private static string GetAuthMethodName(DatabricksConfig config)
     {
         if (config.Credential == null)
         {
@@ -119,7 +119,7 @@ class Program
         };
     }
 
-    static async Task ExecuteQuickQuery(SqlWarehouseClient client, string warehouseId)
+    private static async Task ExecuteQuickQuery(SqlWarehouseClient client, string warehouseId)
     {
         var sql = "SELECT current_timestamp() as timestamp, current_user() as user, current_database() as database LIMIT 10";
 
@@ -140,7 +140,7 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Retrieved {result.Rows.Count} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
     }
 
-    static async Task StreamDataset(SqlWarehouseClient client, string warehouseId)
+    private static async Task StreamDataset(SqlWarehouseClient client, string warehouseId)
     {
         var limit = AnsiConsole.Ask("How many rows to stream?", 100);
         var sql = $"SELECT * FROM samples.nyctaxi.trips LIMIT {limit}";
@@ -174,7 +174,7 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Streamed {rowCount} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
     }
 
-    static async Task ExploreTables(SqlWarehouseClient client, string warehouseId)
+    private static async Task ExploreTables(SqlWarehouseClient client, string warehouseId)
     {
         var sql = "SHOW TABLES";
 
@@ -220,7 +220,7 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Retrieved {result.Rows.Count} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
     }
 
-    static async Task ExecuteCustomQuery(SqlWarehouseClient client, string warehouseId)
+    private static async Task ExecuteCustomQuery(SqlWarehouseClient client, string warehouseId)
     {
         var sql = AnsiConsole.Prompt(
             new TextPrompt<string>("[green]Enter SQL query:[/]")
@@ -242,7 +242,7 @@ class Program
         AnsiConsole.MarkupLine($"[green]✓[/] Retrieved {result.Rows.Count} rows in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
     }
 
-    static void DisplayResultsTable(QueryResult result)
+    private static void DisplayResultsTable(QueryResult result)
     {
         if (result.Columns.Count == 0)
         {
@@ -299,7 +299,7 @@ class Program
         }
     }
 
-    static void ShowConfigurationInfo(DatabricksConfig config, string warehouseId)
+    private static void ShowConfigurationInfo(DatabricksConfig config, string warehouseId)
     {
         var authInfo = GetAuthMethodName(config);
 
